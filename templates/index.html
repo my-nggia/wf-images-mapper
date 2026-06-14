@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wayfair Image Mapper</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f8fafc;
+      --surface:   #ffffff;
+      --surface2:  #f1f5f9;
+      --border:    #e2e8f0;
+
+      --accent:    #2563eb;
+      --accent2:   #7c3aed;
+
+      --success:   #10b981;
+      --warn:      #d97706;
+      --danger:    #dc2626;
+
+      --text:      #0f172a;
+      --muted:     #64748b;
+
+      --font:      'Inter', system-ui, sans-serif;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    header h1 { font-size: 15px; font-weight: 600; letter-spacing: .02em; }
+    header span { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+    main {
+      flex: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      width: 100%;
+    }
+
+    .hero { margin-bottom: 40px; }
+    .hero h2 {
+      
+    }
+    .hero p { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 560px; }
+
+    .steps {
+      display: flex; gap: 8px; margin-bottom: 32px;
+    }
+    .step {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+      font-size: 12px; color: var(--muted);
+    }
+    .step .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      color: var(--accent); margin-bottom: 6px;
+    }
+    .step strong { color: var(--text); display: block; font-size: 13px; margin-bottom: 4px; }
+
+    .upload-area {
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: 14px;
+      padding: 28px 24px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .upload-area:hover, .upload-area.drag { 
+      border-color: var(--accent); 
+      background: rgba(91,127,255,.06);
+    }
+    .upload-area.has-file { border-style: solid; border-color: var(--success); }
+
+    .upload-inner {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .upload-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: var(--surface2); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .upload-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .upload-text p  { font-size: 12px; color: var(--muted); }
+
+    .file-name {
+      margin-top: 10px; padding: 8px 12px;
+      background: var(--surface2); border-radius: 8px;
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      color: var(--success); display: none;
+    }
+    .file-name.show { display: block; }
+
+    input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    /* Image folder upload special */
+    .folder-count {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface2); border-radius: 20px;
+      padding: 4px 12px; font-size: 12px; margin-top: 10px;
+    }
+    .folder-count .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: 10px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; width: 100%; justify-content: center;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover { opacity: .9; }
+
+    /* Progress / Status */
+    .status-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; margin-top: 24px;
+      display: none;
+    }
+    .status-box.show { display: block; }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: inline-block; margin-right: 10px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-msg { font-size: 14px; color: var(--muted); }
+
+    /* Result */
+    .result-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-top: 24px;
+      display: none;
+    }
+    .result-box.show { display: block; }
+    .result-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--surface2); border-radius: 10px; padding: 14px;
+      text-align: center;
+    }
+    .stat .val { font-size: 26px; font-weight: 700; color: var(--accent); }
+    .stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-warn { background: rgba(251,191,36,.15); color: var(--warn); }
+    .badge-ok   { background: rgba(52,211,153,.15); color: var(--success); }
+
+    .unmatched-list {
+      background: var(--surface2); border-radius: 8px; padding: 12px 16px;
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      color: var(--muted); line-height: 1.8; margin-top: 12px;
+      max-height: 200px; overflow-y: auto;
+    }
+    .unmatched-list .title { color: var(--warn); font-size: 11px; margin-bottom: 6px; font-family: var(--font); }
+
+    .error-box {
+      background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3);
+      border-radius: 10px; padding: 16px; margin-top: 20px;
+      font-size: 13px; color: var(--danger); display: none;
+    }
+    .error-box.show { display: block; }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    .note {
+      font-size: 12px; color: var(--muted); line-height: 1.6;
+      background: var(--surface2); border-radius: 8px;
+      padding: 12px 16px; margin-top: 12px;
+      border-left: 3px solid var(--accent);
+    }
+
+    @media (max-width: 600px) {
+      .steps { flex-direction: column; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      header { padding: 14px 16px; }
+      main { padding: 28px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"></div>
+  <h1>Wayfair Image Mapper</h1>
+  <span>v1.0</span>
+</header>
+
+<main>
+  <div class="hero">
+    <h2>Map ảnh theo SKU</h2>
+    <p>Upload template Wayfair (.xlsx) và folder ảnh. <br> Tool sẽ tự động ghép ảnh vào đúng SKU và xuất file Excel.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="num">01</div>
+      <strong>Upload Template</strong>
+      File .xlsx gốc từ Wayfair
+    </div>
+    <div class="step">
+      <div class="num">02</div>
+      <strong>Upload Ảnh</strong>
+      Chọn tất cả ảnh trong folder
+    </div>
+    <div class="step">
+      <div class="num">03</div>
+      <strong>Xuất CSV</strong>
+      Tải về và import vào template
+    </div>
+  </div>
+
+  <!-- Template upload -->
+  <div class="upload-area" id="templateArea">
+    <input type="file" id="templateFile" accept=".xlsx" />
+    <div class="upload-inner">
+      <div class="upload-icon">📋</div>
+      <div class="upload-text">
+        <h3>Wayfair Template (.xlsx)</h3>
+        <p>Click để chọn file template gốc từ Wayfair</p>
+      </div>
+    </div>
+    <div class="file-name" id="templateName"></div>
+  </div>
+
+  <!-- Images upload -->
+  <div class="upload-area" id="imagesArea">
+    <input type="file" id="images" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff">
+    <div class="upload-inner">
+      <div class="upload-icon">🖼</div>
+      <div class="upload-text">
+        <h3>Folder ảnh sản phẩm</h3>
+        <p>Chọn tất cả ảnh (Ctrl+A hoặc Cmd+A để chọn hết trong folder)</p>
+      </div>
+    </div>
+    <div class="folder-count" id="imageCount" style="display:none">
+      <span class="dot"></span>
+      <span id="imageCountText"></span>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Quy tắc đặt tên ảnh:</strong> Tên file phải <em>bắt đầu bằng SKU</em>. <br> Ví dụ SKU <code>ZD-ABC123</code> -> ảnh đặt tên <code>ZD-ABC123_1.jpg</code>, <code>ZD-ABC123_2.jpg</code>... <br> Các ảnh sẽ được sắp xếp theo thứ tự alphabet.
+  </div>
+
+  <div style="margin-top: 20px;">
+    <button class="btn btn-primary" id="processBtn" disabled onclick="processFiles()">
+      Process
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="status-box" id="statusBox">
+    <span class="spinner"></span>
+    <span class="status-msg" id="statusMsg">Đang xử lý...</span>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Result -->
+  <div class="result-box" id="resultBox">
+    <h3>All Done!</h3>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="val" id="statMatched">—</div>
+        <div class="lbl">SKU đã map</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="statImages">—</div>
+        <div class="lbl">Tổng ảnh</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="statExtra">—</div>
+        <div class="lbl">SKU có > 5 ảnh</div>
+      </div>
+    </div>
+
+    <div id="unmatchedSection" style="display:none">
+      <div class="unmatched-list">
+        <div class="title">Ảnh không khớp SKU nào (<span id="unmatchedCount"></span> file)</div>
+        <div id="unmatchedFiles"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="btn btn-success" onclick="downloadZip()">
+      Download
+    </button>
+
+    <!-- <div class="note" style="margin-top: 12px;" id="additionalNote">
+      File <strong>wayfair_image_mapping.xlsx</strong> (Image 1–5 cho mỗi SKU) và <strong>additional_images</strong> (ảnh thứ 6 trở đi).
+    </div> -->
+  </div>
+</main>
+
+<script>
+  const templateFile = document.getElementById('templateFile');
+  const imageFiles = document.getElementById('images');
+  const processBtn   = document.getElementById('processBtn');
+  const templateArea = document.getElementById('templateArea');
+  const imagesArea   = document.getElementById('imagesArea');
+
+  templateFile.addEventListener('change', () => {
+    const f = templateFile.files[0];
+    if (f) {
+      templateArea.classList.add('has-file');
+      const el = document.getElementById('templateName');
+      el.textContent = f.name;
+      el.classList.add('show');
+    }
+    updateBtn();
+  });
+
+  imageFiles.addEventListener('change', () => {
+
+    const count = imageFiles.files.length;
+
+    if (count > 0) {
+        imagesArea.classList.add('has-file');
+
+        document.getElementById('imageCount').style.display = 'inline-flex';
+
+        document.getElementById('imageCountText').textContent =
+            `${count} ảnh đã chọn`;
+    }
+
+    updateBtn();
+});
+
+
+  // Drag & drop for template
+  ['dragenter','dragover'].forEach(e => templateArea.addEventListener(e, ev => {
+    ev.preventDefault(); templateArea.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(e => templateArea.addEventListener(e, ev => {
+    ev.preventDefault(); templateArea.classList.remove('drag');
+  }));
+
+  function updateBtn() {
+      processBtn.disabled =
+          !(templateFile.files.length && imageFiles.files.length);
+  }
+
+  function showStatus(msg) {
+    document.getElementById('statusBox').classList.add('show');
+    document.getElementById('statusMsg').textContent = msg;
+    document.getElementById('errorBox').classList.remove('show');
+    document.getElementById('resultBox').classList.remove('show');
+  }
+
+  function hideStatus() {
+    document.getElementById('statusBox').classList.remove('show');
+  }
+
+  function showError(msg) {
+    hideStatus();
+    const el = document.getElementById('errorBox');
+    el.textContent =  msg;
+    el.classList.add('show');
+  }
+
+  async function processFiles() {
+    showStatus('Đang upload và phân tích template...');
+    processBtn.disabled = true;
+
+    const formData = new FormData();
+
+    formData.append(
+        'template',
+        templateFile.files[0]
+    );
+
+      const imageNames = [];
+
+      for (const file of imageFiles.files) {
+          imageNames.push(file.name);
+      }
+
+      formData.append(
+          'image_names',
+          JSON.stringify(imageNames)
+      );
+
+    try {
+      const res = await fetch('/api/process', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showError(data.error || 'Lỗi không xác định');
+        processBtn.disabled = false;
+        return;
+      }
+
+      hideStatus();
+      const s = data.stats;
+      document.getElementById('statMatched').textContent = s.skus_matched;
+      document.getElementById('statImages').textContent  = s.total_images;
+      document.getElementById('statExtra').textContent   = s.skus_with_extra;
+
+      if (s.unmatched_count > 0) {
+        document.getElementById('unmatchedSection').style.display = 'block';
+        document.getElementById('unmatchedCount').textContent = s.unmatched_count;
+        document.getElementById('unmatchedFiles').textContent = s.unmatched_sample.join('\n') 
+          + (s.unmatched_count > 10 ? `\n... và ${s.unmatched_count - 10} file khác` : '');
+      } else {
+        document.getElementById('unmatchedSection').style.display = 'none';
+      }
+
+      if (!data.has_additional) {
+        document.getElementById('additionalNote').innerHTML = 
+          'File <strong>wayfair_image_mapping.xlsx</strong> (Image 1–5 cho mỗi SKU). Không có SKU nào có hơn 5 ảnh.';
+      }
+
+      document.getElementById('resultBox').classList.add('show');
+
+    } catch (err) {
+      showError('Lỗi kết nối: ' + err.message);
+    }
+
+    processBtn.disabled = false;
+  }
+
+  function downloadZip() {
+    window.location.href = '/api/download';
+  }
+</script>
+
+</body>
+</html>
