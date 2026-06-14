@@ -104,6 +104,9 @@ def build_excel_output(xlsx_bytes, image_map):
 def index():
     return render_template('index.html')
 
+@app.route('/health')
+def health():
+    return {'status': 'ok'}
 
 @app.route('/api/process', methods=['POST'])
 def process():
